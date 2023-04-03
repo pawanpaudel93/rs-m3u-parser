@@ -3,7 +3,6 @@ use reqwest::Client;
 use std::error::Error;
 use std::fs::read_to_string;
 use std::time::Duration;
-use tokio::runtime::Runtime;
 use url::Url;
 
 #[derive(Debug, Clone)]
@@ -141,8 +140,7 @@ impl<'a> M3uParser<'a> {
         self.lines = lines;
 
         if self.lines.len() > 0 {
-            let rt = Runtime::new().unwrap();
-            rt.block_on(self.parse_lines());
+            self.parse_lines().await;
         } else {
             eprintln!("No content to parse!!!");
         }
