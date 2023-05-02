@@ -1,8 +1,10 @@
 use regex::Regex;
 use reqwest::Client;
+use std::collections::HashSet;
 use std::error::Error;
 use std::fs::read_to_string;
 use std::time::Duration;
+use std::vec;
 use url::Url;
 
 #[derive(Debug, Clone)]
@@ -25,7 +27,7 @@ struct Language {
 
 #[derive(Debug, Clone)]
 
-struct Info {
+pub struct Info {
     title: String,
     logo: String,
     url: String,
@@ -35,8 +37,9 @@ struct Info {
     language: Language,
     status: String,
 }
+
 pub struct M3uParser<'a> {
-    streams_info: Vec<Info>,
+    pub streams_info: Vec<Info>,
     streams_info_backup: Vec<Info>,
     lines: Vec<String>,
     timeout: Duration,
@@ -283,5 +286,114 @@ impl<'a> M3uParser<'a> {
             return Some(info);
         }
         return None;
+    }
+
+    pub fn reset_operations(&mut self) {
+        self.streams_info = self.streams_info_backup.clone();
+    }
+
+    fn get_key_value(&'a self, stream_info: &'a Info, key_0: &str, key_1: &str) -> &str {
+        let value = match key_0 {
+            "title" => &stream_info.title,
+            "logo" => &stream_info.logo,
+            "url" => &stream_info.url,
+            "category" => &stream_info.category,
+            "status" => &stream_info.status,
+            "tvg" => match key_1 {
+                "id" => &stream_info.tvg.id,
+                "name" => &stream_info.tvg.name,
+                "url" => &stream_info.tvg.url,
+                _ => "",
+            },
+            "country" => match key_1 {
+                "code" => &stream_info.country.code,
+                "name" => &stream_info.country.name,
+                _ => "",
+            },
+            "language" => match key_1 {
+                "code" => &stream_info.country.code,
+                "name" => &stream_info.country.name,
+                _ => "",
+            },
+            _ => "",
+        };
+        value
+    }
+
+    pub fn filter_by(
+        &mut self,
+        key: &str,
+        filters: Vec<&str>,
+        key_splitter: &str,
+        retrieve: bool,
+        nested_key: bool,
+    ) {
+        let (key_0, key_1) = if nested_key {
+            match key.split(key_splitter).collect::<Vec<&str>>()[..] {
+                [key0, key1] => (key0, key1),
+                _ => {
+                    eprintln!("Nested key must be in the format <key><key_splitter><nested_key>");
+                    return;
+                }
+            }
+        } else {
+            (key, "")
+        };
+
+        let valid_keys_0: HashSet<&str> = [
+            "title", "logo", "url", "category", "tvg", "country", "language", "status",
+        ]
+        .iter()
+        .copied()
+        .collect();
+
+        let valid_keys_1: HashSet<&str> =
+            ["", "id", "name", "url", "code"].iter().copied().collect();
+
+        if !valid_keys_0.contains(&key_0) {
+            eprintln!("{} key is not present.", key);
+            return;
+        }
+
+        if !valid_keys_1.contains(&key_1) {
+            eprintln!("{} key is not present.", key);
+            return;
+        }
+
+        if filters.is_empty() {
+            eprintln!("Filter word/s missing!!!");
+            return;
+        }
+
+        let re_filters: Vec<Regex> = filters
+            .iter()
+            .map(|filter| Regex::new(filter).unwrap())
+            .collect();
+
+        self.streams_info = if retrieve {
+            let streams_info: Vec<Info> = self
+                .streams_info
+                .iter()
+                .filter(|stream_info| {
+                    re_filters.iter().any(|filter| {
+                        filter.is_match(self.get_key_value(stream_info, key_0, key_1))
+                    })
+                })
+                .cloned()
+                .collect();
+            streams_info
+        } else {
+            let streams_info: Vec<Info> = self
+                .streams_info
+                .iter()
+                .filter(|stream_info| {
+                    re_filters.iter().all(|filter| {
+                        !filter.is_match(self.get_key_value(stream_info, key_0, key_1))
+                    })
+                })
+                .cloned()
+                .collect();
+            streams_info
+        }
     }
 }
