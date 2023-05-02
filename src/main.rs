@@ -13,5 +13,6 @@ async fn main() {
         )
         .await;
     m3u_parser.filter_by("title", vec!["TN Todo Noticias"], "_", false, false);
+    m3u_parser.sort_by("title", "_", false, false);
     println!("{:?}", m3u_parser.streams_info);
 }

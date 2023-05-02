@@ -396,4 +396,53 @@ impl<'a> M3uParser<'a> {
             streams_info
         }
     }
+
+    pub fn sort_by(&mut self, key: &str, key_splitter: &str, asc: bool, nested_key: bool) {
+        let (key_0, key_1) = if nested_key {
+            match key.split(key_splitter).collect::<Vec<&str>>()[..] {
+                [key0, key1] => (key0, key1),
+                _ => {
+                    eprintln!("Nested key must be in the format <key><key_splitter><nested_key>");
+                    return;
+                }
+            }
+        } else {
+            (key, "")
+        };
+
+        let valid_keys_0: HashSet<&str> = [
+            "title", "logo", "url", "category", "tvg", "country", "language", "status",
+        ]
+        .iter()
+        .copied()
+        .collect();
+
+        let valid_keys_1: HashSet<&str> =
+            ["", "id", "name", "url", "code"].iter().copied().collect();
+
+        if !valid_keys_0.contains(&key_0) {
+            eprintln!("{} key is not present.", key);
+            return;
+        }
+
+        if !valid_keys_1.contains(&key_1) {
+            eprintln!("{} key is not present.", key);
+            return;
+        }
+
+        let mut cloned_streams_info = self.streams_info.clone();
+
+        cloned_streams_info.sort_by(|a, b| {
+            let a_value = self.get_key_value(a, key_0, key_1);
+            let b_value = self.get_key_value(b, key_0, key_1);
+
+            if asc {
+                a_value.cmp(b_value)
+            } else {
+                b_value.cmp(a_value)
+            }
+        });
+
+        self.streams_info = cloned_streams_info;
+    }
 }
