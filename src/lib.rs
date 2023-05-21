@@ -1,5 +1,6 @@
 mod language;
 
+use once_cell::sync::Lazy;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
@@ -53,16 +54,16 @@ pub struct M3uParser<'a> {
     enforce_schema: bool,
     check_live: bool,
     useragent: &'a str,
-    file_regex: Regex,
-    tvg_name_regex: Regex,
-    tvg_id_regex: Regex,
-    logo_regex: Regex,
-    category_regex: Regex,
-    title_regex: Regex,
-    country_regex: Regex,
-    language_regex: Regex,
-    tvg_url_regex: Regex,
-    streams_regex: Regex,
+    file_regex: Lazy<Regex>,
+    tvg_name_regex: Lazy<Regex>,
+    tvg_id_regex: Lazy<Regex>,
+    logo_regex: Lazy<Regex>,
+    category_regex: Lazy<Regex>,
+    title_regex: Lazy<Regex>,
+    country_regex: Lazy<Regex>,
+    language_regex: Lazy<Regex>,
+    tvg_url_regex: Lazy<Regex>,
+    streams_regex: Lazy<Regex>,
 }
 
 impl<'a> M3uParser<'a> {
@@ -77,19 +78,19 @@ impl<'a> M3uParser<'a> {
             enforce_schema: true,
             check_live: false,
             useragent,
-            file_regex: Regex::new(
-                r#"^[a-zA-Z]:\\((?:.*?\\)*).*\.[\d\w]{3,5}$|^(/[^/]*)+/?.[\d\w]{3,5}$"#,
-            )
-            .unwrap(),
-            tvg_name_regex: Regex::new(r#"tvg-name="(.*?)""#).unwrap(),
-            tvg_id_regex: Regex::new(r#"tvg-id="(.*?)""#).unwrap(),
-            logo_regex: Regex::new(r#"tvg-logo="(.*?)""#).unwrap(),
-            category_regex: Regex::new(r#"group-title="(.*?)""#).unwrap(),
-            title_regex: Regex::new(r#",([^",]+)$"#).unwrap(),
-            country_regex: Regex::new(r#"tvg-country="(.*?)""#).unwrap(),
-            language_regex: Regex::new(r#"tvg-language="(.*?)""#).unwrap(),
-            tvg_url_regex: Regex::new(r#"tvg-url="(.*?)""#).unwrap(),
-            streams_regex: Regex::new(r"acestream://[a-zA-Z0-9]+").unwrap(),
+            file_regex: Lazy::new(|| {
+                Regex::new(r#"^[a-zA-Z]:\\((?:.*?\\)*).*\.[\d\w]{3,5}$|^(/[^/]*)+/?.[\d\w]{3,5}$"#)
+                    .unwrap()
+            }),
+            tvg_name_regex: Lazy::new(|| Regex::new(r#"tvg-name="(.*?)""#).unwrap()),
+            tvg_id_regex: Lazy::new(|| Regex::new(r#"tvg-id="(.*?)""#).unwrap()),
+            logo_regex: Lazy::new(|| Regex::new(r#"tvg-logo="(.*?)""#).unwrap()),
+            category_regex: Lazy::new(|| Regex::new(r#"group-title="(.*?)""#).unwrap()),
+            title_regex: Lazy::new(|| Regex::new(r#",([^",]+)$"#).unwrap()),
+            country_regex: Lazy::new(|| Regex::new(r#"tvg-country="(.*?)""#).unwrap()),
+            language_regex: Lazy::new(|| Regex::new(r#"tvg-language="(.*?)""#).unwrap()),
+            tvg_url_regex: Lazy::new(|| Regex::new(r#"tvg-url="(.*?)""#).unwrap()),
+            streams_regex: Lazy::new(|| Regex::new(r"acestream://[a-zA-Z0-9]+").unwrap()),
         }
     }
 
@@ -150,7 +151,7 @@ impl<'a> M3uParser<'a> {
 
         self.lines = lines;
 
-        if self.lines.len() > 0 {
+        if !self.lines.is_empty() {
             self.parse_lines().await;
         } else {
             eprintln!("No content to parse!!!");
@@ -183,48 +184,48 @@ impl<'a> M3uParser<'a> {
 
     async fn parse_line(&self, line_num: usize, client: &reqwest::Client) -> Option<Info> {
         let line_info = &self.lines[line_num];
-        let mut stream_link = String::from("");
+        let mut stream_link = String::new();
         let mut streams_link: Vec<String> = vec![];
         let mut status = String::from("BAD");
 
         for i in [1, 2].iter() {
             let line = &self.lines[line_num + i];
             let is_acestream = self.streams_regex.is_match(&line);
-            if line.len() > 0 && (is_acestream || self.is_valid_url(&line)) {
+            if !line.is_empty() && (is_acestream || self.is_valid_url(&line)) {
                 streams_link.push(line.to_string());
                 if is_acestream {
                     status = String::from("GOOD");
                 }
                 break;
-            } else if line.len() > 0 && self.file_regex.is_match(&line) {
+            } else if !line.is_empty() && self.file_regex.is_match(&line) {
                 status = String::from("GOOD");
                 streams_link.push(line.to_string());
                 break;
             }
         }
 
-        if streams_link.len() > 0 {
+        if !streams_link.is_empty() {
             stream_link = streams_link[0].to_string();
         }
 
         if !line_info.is_empty() && !stream_link.is_empty() {
             let mut info = Info {
-                title: "".to_string(),
-                logo: "".to_string(),
-                url: "".to_string(),
-                category: "".to_string(),
+                title: String::new(),
+                logo: String::new(),
+                url: String::new(),
+                category: String::new(),
                 tvg: Tvg {
-                    id: "".to_string(),
-                    name: "".to_string(),
-                    url: "".to_string(),
+                    id: String::new(),
+                    name: String::new(),
+                    url: String::new(),
                 },
                 country: Country {
-                    code: "".to_string(),
-                    name: "".to_string(),
+                    code: String::new(),
+                    name: String::new(),
                 },
                 language: Language {
-                    code: "".to_string(),
-                    name: "".to_string(),
+                    code: String::new(),
+                    name: String::new(),
                 },
                 status,
             };
@@ -302,40 +303,39 @@ impl<'a> M3uParser<'a> {
 
     fn get_m3u_content(&self) -> String {
         if self.streams_info.is_empty() {
-            return String::from("");
+            return String::new();
         }
-        let mut content = vec!["#EXTM3U".to_string()];
 
-        for stream_info in &self.streams_info {
-            let mut line = String::from("#EXTINF:-1");
-            if !stream_info.tvg.id.is_empty() {
-                line.push_str(&format!(" tvg-id=\"{}\"", stream_info.tvg.id));
-            }
-            if !stream_info.tvg.name.is_empty() {
-                line.push_str(&format!(" tvg-name=\"{}\"", stream_info.tvg.name));
-            }
-            if !stream_info.tvg.url.is_empty() {
-                line.push_str(&format!(" tvg-url=\"{}\"", stream_info.tvg.url));
-            }
-            if !stream_info.logo.is_empty() {
-                line.push_str(&format!(" tvg-logo=\"{}\"", stream_info.logo));
-            }
-            if !stream_info.country.code.is_empty() {
-                line.push_str(&format!(" tvg-country=\"{}\"", stream_info.country.code));
-            }
-            if !stream_info.language.name.is_empty() {
-                line.push_str(&format!(" tvg-language=\"{}\"", stream_info.language.name));
-            }
-            if !stream_info.category.is_empty() {
-                line.push_str(&format!(" group-title=\"{}\"", stream_info.category));
-            }
-            if !stream_info.title.is_empty() {
-                line.push_str(&format!(",{}", stream_info.title));
-            }
-            content.push(line);
-            content.push(format!("{}", stream_info.url));
-        }
-        content.join("\n")
+        let content: Vec<String> = self
+            .streams_info
+            .iter()
+            .map(|stream_info| {
+                let mut line = String::from("#EXTINF:-1");
+
+                macro_rules! append_attribute {
+                    ($attr:expr, $value:expr) => {
+                        if !$value.is_empty() {
+                            line.push_str(&format!(" {}=\"{}\"", $attr, $value));
+                        }
+                    };
+                }
+
+                append_attribute!("tvg-id", stream_info.tvg.id);
+                append_attribute!("tvg-name", stream_info.tvg.name);
+                append_attribute!("tvg-url", stream_info.tvg.url);
+                append_attribute!("tvg-logo", stream_info.logo);
+                append_attribute!("tvg-country", stream_info.country.code);
+                append_attribute!("tvg-language", stream_info.language.name);
+                append_attribute!("group-title", stream_info.category);
+
+                if !stream_info.title.is_empty() {
+                    line.push_str(&format!(",{}", stream_info.title));
+                }
+
+                format!("{}\n{}", line, stream_info.url)
+            })
+            .collect();
+        ["#EXTM3U".to_string(), content.join("\n")].join("\n")
     }
 
     pub fn reset_operations(&mut self) {

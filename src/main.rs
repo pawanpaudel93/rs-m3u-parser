@@ -17,5 +17,5 @@ async fn main() {
     // let json_value = m3u_parser.get_json(true).unwrap();
     let random_stream = parser.get_random_stream(true);
     println!("{:?}", random_stream.unwrap());
-    parser.to_file("hello.json", "json")
+    parser.to_file("hello.m3u", "m3u")
 }
