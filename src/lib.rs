@@ -1,31 +1,36 @@
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use regex::Regex;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
+use serde_json;
 use std::collections::HashSet;
 use std::error::Error;
-use std::fs::read_to_string;
+use std::fs::{read_to_string, File};
+use std::io::Write;
 use std::time::Duration;
 use std::vec;
 use url::Url;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct Tvg {
     id: String,
     name: String,
     url: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct Country {
     code: String,
     name: String,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct Language {
     code: String,
     name: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 
 pub struct Info {
     title: String,
@@ -98,6 +103,12 @@ impl<'a> M3uParser<'a> {
         let response = client.get(url).send().await?;
         let content = response.text().await?;
         Ok(content)
+    }
+
+    fn save_file(&self, filename: &str, data: &[u8]) {
+        let mut file = File::create(filename).unwrap();
+        file.write(data).unwrap();
+        println!("Saved to file: {}", filename);
     }
 
     fn get_by_regex(&self, regex: &Regex, content: &str) -> Option<String> {
@@ -288,6 +299,44 @@ impl<'a> M3uParser<'a> {
         return None;
     }
 
+    fn get_m3u_content(&self) -> String {
+        if self.streams_info.is_empty() {
+            return String::from("");
+        }
+        let mut content = vec!["#EXTM3U".to_string()];
+
+        for stream_info in &self.streams_info {
+            let mut line = String::from("#EXTINF:-1");
+            if !stream_info.tvg.id.is_empty() {
+                line.push_str(&format!(" tvg-id=\"{}\"", stream_info.tvg.id));
+            }
+            if !stream_info.tvg.name.is_empty() {
+                line.push_str(&format!(" tvg-name=\"{}\"", stream_info.tvg.name));
+            }
+            if !stream_info.tvg.url.is_empty() {
+                line.push_str(&format!(" tvg-url=\"{}\"", stream_info.tvg.url));
+            }
+            if !stream_info.logo.is_empty() {
+                line.push_str(&format!(" tvg-logo=\"{}\"", stream_info.logo));
+            }
+            if !stream_info.country.code.is_empty() {
+                line.push_str(&format!(" tvg-country=\"{}\"", stream_info.country.code));
+            }
+            if !stream_info.language.name.is_empty() {
+                line.push_str(&format!(" tvg-language=\"{}\"", stream_info.language.name));
+            }
+            if !stream_info.category.is_empty() {
+                line.push_str(&format!(" group-title=\"{}\"", stream_info.category));
+            }
+            if !stream_info.title.is_empty() {
+                line.push_str(&format!(",{}", stream_info.title));
+            }
+            content.push(line);
+            content.push(format!("{}", stream_info.url));
+        }
+        content.join("\n")
+    }
+
     pub fn reset_operations(&mut self) {
         self.streams_info = self.streams_info_backup.clone();
     }
@@ -444,5 +493,63 @@ impl<'a> M3uParser<'a> {
         });
 
         self.streams_info = cloned_streams_info;
+    }
+
+    pub fn get_json(&self, preety: bool) -> serde_json::Result<String> {
+        let streams_json: String;
+        if preety {
+            streams_json = serde_json::to_string_pretty(&self.streams_info)?;
+        } else {
+            streams_json = serde_json::to_string(&self.streams_info)?;
+        }
+        Ok(streams_json)
+    }
+
+    pub fn get_vector(&self) -> Vec<Info> {
+        self.streams_info.clone()
+    }
+
+    pub fn get_random_stream(&mut self, random_shuffle: bool) -> Option<&Info> {
+        if self.streams_info.is_empty() {
+            eprintln!("No streams information so could not get any random stream.");
+            return None;
+        }
+        let mut rng = thread_rng();
+        let stream_infos = &mut self.streams_info[..];
+        if random_shuffle {
+            stream_infos.shuffle(&mut rng);
+        }
+        Some(stream_infos.choose(&mut rng).unwrap())
+    }
+
+    pub fn to_file(&self, filename: &str, format: &str) {
+        let format = if filename.contains(".") {
+            filename.split(".").last().unwrap_or(format)
+        } else {
+            format
+        };
+
+        let filename = match filename.to_lowercase().ends_with(format) {
+            true => filename.to_owned(),
+            false => format!("{}.{}", filename, format),
+        };
+
+        if self.streams_info.is_empty() {
+            println!("Either parsing is not done or no stream info was found after parsing !!!");
+            return;
+        }
+
+        println!("Saving to file: {}", filename);
+        match format {
+            "json" => {
+                let content = self.get_json(true).unwrap();
+                self.save_file(filename.as_str(), content.as_bytes());
+            }
+            "m3u" => {
+                let content = self.get_m3u_content();
+                self.save_file(filename.as_str(), content.as_bytes());
+            }
+            _ => println!("Unrecognised format!!!"),
+        }
     }
 }
