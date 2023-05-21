@@ -496,6 +496,22 @@ impl<'a> M3uParser<'a> {
         self.streams_info = cloned_streams_info;
     }
 
+    pub fn remove_by_extension(&mut self, extensions: Vec<&str>) {
+        self.filter_by("url", extensions, "-", false, false)
+    }
+
+    pub fn retrieve_by_extension(&mut self, extensions: Vec<&str>) {
+        self.filter_by("url", extensions, "-", true, false)
+    }
+
+    pub fn remove_by_category(&mut self, extensions: Vec<&str>) {
+        self.filter_by("category", extensions, "-", false, false)
+    }
+
+    pub fn retrieve_by_category(&mut self, extensions: Vec<&str>) {
+        self.filter_by("category", extensions, "-", true, false)
+    }
+
     pub fn get_json(&self, preety: bool) -> serde_json::Result<String> {
         let streams_json: String;
         if preety {
