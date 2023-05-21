@@ -1,3 +1,5 @@
+mod language;
+
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use regex::Regex;
@@ -118,12 +120,7 @@ impl<'a> M3uParser<'a> {
         }
     }
 
-    pub async fn parse_m3u(
-        &mut self,
-        path: &str,
-        check_live: bool,     /* = true */
-        enforce_schema: bool, /* = true */
-    ) {
+    pub async fn parse_m3u(&mut self, path: &str, check_live: bool, enforce_schema: bool) {
         let content: String;
         self.check_live = check_live;
         self.enforce_schema = enforce_schema;
@@ -263,8 +260,10 @@ impl<'a> M3uParser<'a> {
 
             // Country
             if let Some(country) = self.get_by_regex(&self.country_regex, &line_info) {
-                let country_obj = celes::Country::from_alpha2(&country);
-                let country_name = country_obj.unwrap().long_name;
+                let mut country_name = "";
+                if let Ok(country_obj) = celes::Country::from_alpha2(&country) {
+                    country_name = country_obj.long_name;
+                }
                 info.country = Country {
                     code: country,
                     name: country_name.to_string(),
@@ -273,8 +272,10 @@ impl<'a> M3uParser<'a> {
 
             // Language
             if let Some(language) = self.get_by_regex(&self.language_regex, &line_info) {
+                let language_lower = language.to_lowercase();
+                let country_code = language::get_language_code(&language_lower);
                 info.language = Language {
-                    code: "".to_string(),
+                    code: country_code.to_owned().to_string(),
                     name: language,
                 };
             }
@@ -535,7 +536,7 @@ impl<'a> M3uParser<'a> {
         };
 
         if self.streams_info.is_empty() {
-            println!("Either parsing is not done or no stream info was found after parsing !!!");
+            eprintln!("Either parsing is not done or no stream info was found after parsing !!!");
             return;
         }
 
@@ -549,7 +550,7 @@ impl<'a> M3uParser<'a> {
                 let content = self.get_m3u_content();
                 self.save_file(filename.as_str(), content.as_bytes());
             }
-            _ => println!("Unrecognised format!!!"),
+            _ => eprintln!("Unrecognised format!!!"),
         }
     }
 }

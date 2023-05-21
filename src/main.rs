@@ -7,7 +7,7 @@ async fn main() {
     let mut parser = M3uParser::new(Some(Duration::from_secs(5)));
     parser
         .parse_m3u(
-            "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8",
+            "https://gist.githubusercontent.com/fiksani/9827055b019258cc5f7988c483e229cf/raw/ec5c2c1a99eff60e6213d3afed69242ab7207074/index.country.m3u",
             true,
             true,
         )
