@@ -1,8 +1,8 @@
 # M3U Parser
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Crates.io](https://img.shields.io/crates/v/m3u-parser.svg)](https://crates.io/crates/m3u-parser)
-[![Documentation](https://docs.rs/m3u-parser/badge.svg)](https://docs.rs/m3u-parser)
+[![Crates.io](https://img.shields.io/crates/v/m3u_parser.svg)](https://crates.io/crates/m3u_parser)
+[![Documentation](https://docs.rs/m3u_parser/badge.svg)](https://docs.rs/m3u_parser)
 
 A library for parsing and manipulating M3U playlists.
 
@@ -16,11 +16,11 @@ A library for parsing and manipulating M3U playlists.
 
 ## Installation
 
-Add the `m3u-parser` crate to your `Cargo.toml` file:
+Add the `m3u_parser` crate to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-m3u-parser = "0.1.1"
+m3u_parser = "0.1.2"
 ```
 
 Import the M3uParser struct and use it to parse M3U playlists:
@@ -36,7 +36,7 @@ async fn main() {
 }
 ```
 
-For more examples and detailed documentation, see the [API documentation](https://docs.rs/m3u-parser).
+For more examples and detailed documentation, see the [API documentation](https://docs.rs/m3u_parser).
 
 ## Examples
 
