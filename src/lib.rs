@@ -1,3 +1,7 @@
+//! # M3u Parser
+//!
+//! A library for parsing and manipulating M3U files.
+
 mod language;
 
 use once_cell::sync::Lazy;
@@ -15,6 +19,7 @@ use std::time::Duration;
 use std::vec;
 use url::Url;
 
+/// Struct representing the Tvg information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Tvg {
     id: String,
@@ -22,19 +27,22 @@ struct Tvg {
     url: String,
 }
 
+/// Struct representing the Country information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Country {
     code: String,
     name: String,
 }
+
+/// Struct representing the Language information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Language {
     code: String,
     name: String,
 }
 
+/// Struct representing the stream information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-
 pub struct Info {
     title: String,
     logo: String,
@@ -46,6 +54,7 @@ pub struct Info {
     status: String,
 }
 
+/// M3U Parser struct for parsing and manipulating M3U files.
 pub struct M3uParser<'a> {
     pub streams_info: Vec<Info>,
     streams_info_backup: Vec<Info>,
@@ -67,6 +76,12 @@ pub struct M3uParser<'a> {
 }
 
 impl<'a> M3uParser<'a> {
+    /// Creates a new instance of M3uParser.
+    ///
+    /// # Arguments
+    ///
+    /// * `timeout` - An optional `Duration` specifying the timeout for network requests.
+    ///               If not provided, a default timeout of 5 seconds is used.
     pub fn new(timeout: Option<Duration>) -> M3uParser<'a> {
         let useragent =  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
         let timeout = timeout.unwrap_or_else(|| Duration::from_secs(5));
@@ -121,6 +136,15 @@ impl<'a> M3uParser<'a> {
         }
     }
 
+    /// Parses the specified M3U playlist file or URL.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path or URL of the M3U playlist.
+    /// * `check_live` - A boolean indicating whether to check the availability of streams.
+    ///                  If set to `true`, the parser will make a request to each stream URL to check its status.
+    /// * `enforce_schema` - A boolean indicating whether to enforce the M3U schema.
+    ///                      If set to `true`, only valid M3U entries will be parsed.
     pub async fn parse_m3u(&mut self, path: &str, check_live: bool, enforce_schema: bool) {
         let content: String;
         self.check_live = check_live;
@@ -338,6 +362,12 @@ impl<'a> M3uParser<'a> {
         ["#EXTM3U".to_string(), content.join("\n")].join("\n")
     }
 
+    /// Resets the operations of the M3uParser by restoring the backup of stream information.
+    ///
+    /// This function restores the original state of the M3uParser by replacing the current
+    /// stream information with the backup. This can be useful when you want to undo any
+    /// modifications or filtering operations applied to the stream information.
+    ///
     pub fn reset_operations(&mut self) {
         self.streams_info = self.streams_info_backup.clone();
     }
@@ -370,6 +400,36 @@ impl<'a> M3uParser<'a> {
         value
     }
 
+    /// Filters the stream information based on the specified key and filters.
+    ///
+    /// This function applies filtering operations to the stream information based on the provided key
+    /// and filters. The key represents the attribute of the stream information that will be filtered,
+    /// and the filters specify the conditions that the attribute should match. The function allows
+    /// filtering based on nested keys and provides options to retrieve or exclude the matching
+    /// stream information.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The attribute key to filter by. Valid values are: "title", "logo", "url", "category",
+    ///   "tvg", "country", "language", and "status".
+    /// * `filters` - A vector of filter strings. The stream information will be filtered based on
+    ///   these conditions.
+    /// * `key_splitter` - The delimiter used to split the key for nested filtering. Set it to an empty
+    ///   string (`""`) if nested filtering is not required.
+    /// * `retrieve` - A boolean value indicating whether to retrieve the matching stream information
+    ///   (`true`) or exclude it from the result (`false`).
+    /// * `nested_key` - A boolean value indicating whether the key represents a nested key. If `true`,
+    ///   the key will be split using the `key_splitter`, and filtering will be applied to the nested
+    ///   key. If `false`, the key will be treated as a single key for filtering.
+    ///
+    /// # Panics
+    ///
+    /// The function will panic in the following scenarios:
+    ///
+    /// * If the nested key is provided but not in the format `<key><key_splitter><nested_key>`.
+    /// * If the provided key is not one of the valid keys ("title", "logo", "url", "category",
+    ///   "tvg", "country", "language", "status").
+    ///
     pub fn filter_by(
         &mut self,
         key: &str,
@@ -447,6 +507,33 @@ impl<'a> M3uParser<'a> {
         }
     }
 
+    /// Sorts the stream information based on the specified key and sorting options.
+    ///
+    /// This function sorts the stream information based on the provided key and sorting options. The key
+    /// represents the attribute of the stream information that will be used for sorting. The function
+    /// allows sorting based on nested keys and provides options to specify the sorting order.
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The attribute key to sort by. Valid values are: "title", "logo", "url", "category",
+    ///   "tvg", "country", "language", and "status".
+    /// * `key_splitter` - The delimiter used to split the key for nested sorting. Set it to an empty
+    ///   string (`""`) if nested sorting is not required.
+    /// * `asc` - A boolean value indicating the sorting order. If `true`, the stream information will be
+    ///   sorted in ascending order based on the specified key. If `false`, the stream information will
+    ///   be sorted in descending order.
+    /// * `nested_key` - A boolean value indicating whether the key represents a nested key. If `true`,
+    ///   the key will be split using the `key_splitter`, and sorting will be applied to the nested key.
+    ///   If `false`, the key will be treated as a single key for sorting.
+    ///
+    /// # Panics
+    ///
+    /// The function will panic in the following scenarios:
+    ///
+    /// * If the nested key is provided but not in the format `<key><key_splitter><nested_key>`.
+    /// * If the provided key is not one of the valid keys ("title", "logo", "url", "category",
+    ///   "tvg", "country", "language", "status").
+    ///
     pub fn sort_by(&mut self, key: &str, key_splitter: &str, asc: bool, nested_key: bool) {
         let (key_0, key_1) = if nested_key {
             match key.split(key_splitter).collect::<Vec<&str>>()[..] {
@@ -496,22 +583,77 @@ impl<'a> M3uParser<'a> {
         self.streams_info = cloned_streams_info;
     }
 
+    /// Removes stream information based on the specified file extensions.
+    ///
+    /// This function removes stream information based on the file extensions specified in the `extensions`
+    /// parameter. It internally calls the `filter_by` function with the "url" attribute as the key and
+    /// filters the stream information that matches any of the provided extensions.
+    ///
+    /// # Arguments
+    ///
+    /// * `extensions` - A vector of file extensions to be removed. Each extension should be a string.
+    ///
     pub fn remove_by_extension(&mut self, extensions: Vec<&str>) {
         self.filter_by("url", extensions, "-", false, false)
     }
 
+    /// Retrieves stream information based on the specified file extensions.
+    ///
+    /// This function retrieves stream information based on the file extensions specified in the `extensions`
+    /// parameter. It internally calls the `filter_by` function with the "url" attribute as the key and
+    /// filters the stream information that matches any of the provided extensions.
+    ///
+    /// # Arguments
+    ///
+    /// * `extensions` - A vector of file extensions to be retrieved. Each extension should be a string.
+    ///
     pub fn retrieve_by_extension(&mut self, extensions: Vec<&str>) {
         self.filter_by("url", extensions, "-", true, false)
     }
 
+    /// Removes stream information based on the specified categories.
+    ///
+    /// This function removes stream information based on the categories specified in the `extensions`
+    /// parameter. It internally calls the `filter_by` function with the "category" attribute as the key
+    /// and filters out the stream information that matches any of the provided categories.
+    ///
+    /// # Arguments
+    ///
+    /// * `categories` - A vector of categories to be removed. Each category should be a string.
+    ///
     pub fn remove_by_category(&mut self, extensions: Vec<&str>) {
         self.filter_by("category", extensions, "-", false, false)
     }
 
+    /// Retrieves stream information based on the specified categories.
+    ///
+    /// This function retrieves stream information based on the categories specified in the `extensions`
+    /// parameter. It internally calls the `filter_by` function with the "category" attribute as the key
+    /// and filters the stream information that matches any of the provided categories.
+    ///
+    /// # Arguments
+    ///
+    /// * `categories` - A vector of categories to be retrieved. Each category should be a string.
+    ///
     pub fn retrieve_by_category(&mut self, extensions: Vec<&str>) {
         self.filter_by("category", extensions, "-", true, false)
     }
 
+    /// Retrieves the stream information in JSON format.
+    ///
+    /// This function returns the stream information in JSON format. The JSON can be either
+    /// pretty-formatted or compact depending on the `preety` parameter.
+    ///
+    /// # Arguments
+    ///
+    /// * `pretty` - A boolean indicating whether to format the JSON output in a pretty, human-readable way.
+    ///
+    /// # Returns
+    ///
+    /// A `serde_json::Result<String>` representing the JSON output. If the serialization to JSON is successful,
+    /// the result will contain the JSON string. Otherwise, an error indicating the reason for the failure
+    /// will be returned.
+    ///
     pub fn get_json(&self, preety: bool) -> serde_json::Result<String> {
         let streams_json: String;
         if preety {
@@ -522,10 +664,37 @@ impl<'a> M3uParser<'a> {
         Ok(streams_json)
     }
 
+    /// Retrieves a vector containing all stream information.
+    ///
+    /// This function returns a deep clone of the internal `streams_info` vector, which
+    /// contains all the stream information.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<Info>` containing all stream information. If there is no stream information
+    /// available, an empty vector will be returned.
+    ///
     pub fn get_vector(&self) -> Vec<Info> {
         self.streams_info.clone()
     }
 
+    /// Retrieves a random stream from the available stream information.
+    ///
+    /// This function randomly selects a stream from the available stream information.
+    /// The `random_shuffle` parameter determines whether to shuffle the stream information
+    /// before selecting a random stream. If the stream information is empty, `None` will be returned.
+    ///
+    /// # Arguments
+    ///
+    /// * `random_shuffle` - A boolean indicating whether to shuffle the stream information before
+    ///                      selecting a random stream.
+    ///
+    /// # Returns
+    ///
+    /// An `Option<&Info>` representing the randomly selected stream. If a stream is successfully
+    /// selected, the result will contain a reference to the stream. Otherwise, if the stream
+    /// information is empty, `None` will be returned.
+    ///
     pub fn get_random_stream(&mut self, random_shuffle: bool) -> Option<&Info> {
         if self.streams_info.is_empty() {
             eprintln!("No streams information so could not get any random stream.");
@@ -539,6 +708,28 @@ impl<'a> M3uParser<'a> {
         Some(stream_infos.choose(&mut rng).unwrap())
     }
 
+    /// Saves the stream information to a file in the specified format.
+    ///
+    /// This function saves the stream information to a file with the given `filename` and `format`.
+    /// If the `filename` already contains a file extension, it will be used as the format. Otherwise,
+    /// the `format` parameter will be used as the file extension.
+    ///
+    /// The supported formats are "json" and "m3u". For "json" format, the stream information will be
+    /// saved as a JSON string in a pretty printed format. For "m3u" format, the stream information will
+    /// be saved as an M3U playlist.
+    ///
+    /// # Arguments
+    ///
+    /// * `filename` - A string representing the name of the file to be saved. If the file already exists,
+    ///                it will be overwritten.
+    /// * `format` - A string representing the format in which the stream information should be saved. If
+    ///              the `filename` already contains a file extension, it will be used as the format.
+    ///              Otherwise, the `format` parameter will be used as the file extension.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if there is an error while converting the stream information to the specified format
+    /// or if there is an error while saving the file.
     pub fn to_file(&self, filename: &str, format: &str) {
         let format = if filename.contains(".") {
             filename.split(".").last().unwrap_or(format)
@@ -567,6 +758,51 @@ impl<'a> M3uParser<'a> {
                 self.save_file(filename.as_str(), content.as_bytes());
             }
             _ => eprintln!("Unrecognised format!!!"),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::time::Duration;
+
+    use super::M3uParser;
+
+    #[tokio::test]
+    async fn test_m3u_parser() {
+        let mut parser = M3uParser::new(Some(Duration::from_secs(5)));
+        parser
+            .parse_m3u(
+                "https://iptv-org.github.io/iptv/index.country.m3u",
+                true,
+                true,
+            )
+            .await;
+
+        parser.filter_by("title", vec!["Metro TV"], "_", false, false);
+        parser.sort_by("title", "_", false, false);
+
+        assert!(
+            !parser
+                .streams_info
+                .iter()
+                .any(|info| info.title == "Metro TV"),
+            "Metro TV is available as a title"
+        );
+
+        let random_stream = parser.get_random_stream(true);
+        assert!(random_stream.is_some(), "Random stream should be available");
+
+        let file_path = "hello.m3u";
+        parser.to_file(file_path, "m3u");
+
+        // Assert that the file exists
+        assert!(fs::metadata(file_path).is_ok(), "Output file should exist");
+
+        // Clean up the temporary file
+        if let Err(err) = fs::remove_file(file_path) {
+            eprintln!("Failed to remove file: {}", err);
         }
     }
 }

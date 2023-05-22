@@ -1,6 +1,21 @@
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
+/// Retrieve the language code based on the language name.
+///
+/// This function takes a language name as input and returns the corresponding language code.
+/// The language code is retrieved from a static HashMap, `LANGUAGES_TO_CODE`, which maps
+/// language names to language codes.
+///
+/// # Arguments
+///
+/// * `language` - A string slice representing the language name.
+///
+/// # Returns
+///
+/// A string slice representing the language code. If the language name is not found in the
+/// `LANGUAGES_TO_CODE` map, an empty string is returned.
+///
 pub fn get_language_code(language: &str) -> &str {
     static LANGUAGES_TO_CODE: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
         let data = vec![
@@ -192,4 +207,19 @@ pub fn get_language_code(language: &str) -> &str {
     });
 
     LANGUAGES_TO_CODE.get(language).unwrap_or(&"")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::get_language_code;
+
+    #[test]
+    fn test_get_language_code() {
+        assert_eq!(get_language_code("english"), "EN");
+        assert_eq!(get_language_code("french"), "FR");
+        assert_eq!(get_language_code("german"), "DE");
+        assert_eq!(get_language_code("spanish"), "ES");
+        assert_eq!(get_language_code("italian"), "IT");
+        assert_eq!(get_language_code("unknown"), "");
+    }
 }
