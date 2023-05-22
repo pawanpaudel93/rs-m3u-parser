@@ -20,7 +20,7 @@ Add the `m3u-parser` crate to your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-m3u-parser = "0.1.0"
+m3u-parser = "0.1.1"
 ```
 
 Import the M3uParser struct and use it to parse M3U playlists:
