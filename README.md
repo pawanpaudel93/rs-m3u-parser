@@ -55,6 +55,12 @@ async fn main() {
 }
 ```
 
+## Other Implementations
+
+- `Golang`: [go-m3u-parser](https://github.com/pawanpaudel93/go-m3u-parser)
+- `Python`: [m3u-parser](https://github.com/pawanpaudel93/m3u-parser)
+- `Typescript`: [ts-m3u-parser](https://github.com/pawanpaudel93/ts-m3u-parser)
+
 ## Author
 
 👤 **Pawan Paudel**
