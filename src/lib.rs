@@ -21,37 +21,37 @@ use url::Url;
 
 /// Struct representing the Tvg information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Tvg {
-    id: String,
-    name: String,
-    url: String,
+pub struct Tvg {
+    pub id: String,
+    pub name: String,
+    pub url: String,
 }
 
 /// Struct representing the Country information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Country {
-    code: String,
-    name: String,
+pub struct Country {
+    pub code: String,
+    pub name: String,
 }
 
 /// Struct representing the Language information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Language {
-    code: String,
-    name: String,
+pub struct Language {
+    pub code: String,
+    pub name: String,
 }
 
 /// Struct representing the stream information.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Info {
-    title: String,
-    logo: String,
-    url: String,
-    category: String,
-    tvg: Tvg,
-    country: Country,
-    language: Language,
-    status: String,
+    pub title: String,
+    pub logo: String,
+    pub url: String,
+    pub category: String,
+    pub tvg: Tvg,
+    pub country: Country,
+    pub language: Language,
+    pub status: String,
 }
 
 /// M3U Parser struct for parsing and manipulating M3U files.
